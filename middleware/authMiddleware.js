@@ -7,7 +7,8 @@ const protect = (req, res, next) => {
     try {
       token = token.split(" ")[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = decoded;
+
+      req.user = decoded; // { id: user._id }
       next();
     } catch (error) {
       return res.status(401).json({ message: "Token invalid" });

@@ -4,7 +4,7 @@ export const sendEmail = async (to, subject, otp) => {
   try {
     const apiInstance = new Brevo.TransactionalEmailsApi();
 
-    // ✅ Correct way for your SDK version
+    // ✅ Correct API key setup
     apiInstance.authentications["apiKey"].apiKey = process.env.BREVO_API_KEY;
 
     const sendSmtpEmail = new Brevo.SendSmtpEmail();

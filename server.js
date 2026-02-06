@@ -12,7 +12,19 @@ connectDB();
 
 const app = express();
 
-app.use(cors());
+// ✅ CORS FIX (IMPORTANT)
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "https://task-manager-frontend-lac-three.vercel.app",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
