@@ -3,16 +3,13 @@ import otpGenerator from "otp-generator";
 import Otp from "../models/Otp.js";
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
-import { sendEmail } from "../utils/sendEmail.js";
-import { registerUser, loginUser } from "../controllers/authController.js";
+import { sendEmail } from "../utils/sendEmail.js"; // ✅ Brevo service
+import { loginUser } from "../controllers/authController.js";
 
 const router = express.Router();
 
-// normal login
+// ✅ LOGIN
 router.post("/login", loginUser);
-
-// ❌ remove old register route (because now OTP will register)
-// router.post("/register", registerUser);
 
 
 
@@ -21,8 +18,8 @@ router.post("/login", loginUser);
 router.post("/send-otp", async (req, res) => {
   try {
     const { email } = req.body;
-    console.log("Email received:", email);
 
+    console.log("Email received:", email);
 
     // check if already registered
     const existingUser = await User.findOne({ email });
@@ -47,16 +44,17 @@ router.post("/send-otp", async (req, res) => {
       expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes
     });
 
-    // send otp email
+    // ✅ send otp using BREVO API
     await sendEmail(
       email,
       "OTP Verification - Employee Task Manager",
-      `Your OTP is: ${generatedOtp}\n\nThis OTP is valid for 5 minutes.`
+      generatedOtp
     );
 
     res.json({ message: "OTP sent successfully ✅" });
   } catch (error) {
-    console.log(error);
+    console.log("❌ SEND OTP ERROR:", error);
+    // console.log("❌ Brevo Email error:", error?.response?.body || error);
     res.status(500).json({ message: "Failed to send OTP ❌" });
   }
 });
@@ -107,7 +105,7 @@ router.post("/verify-otp-register", async (req, res) => {
 
     res.json(user);
   } catch (error) {
-    console.log(error);
+    console.log("❌ VERIFY OTP REGISTER ERROR:", error);
     res.status(500).json({ message: "Registration failed ❌" });
   }
 });
