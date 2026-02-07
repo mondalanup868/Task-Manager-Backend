@@ -10,6 +10,18 @@ export const generatePDF = async (req, res) => {
       return res.status(400).json({ message: "From and To dates are required" });
     }
 
+    // ✅ Date format: DD/MM/YY
+    const formatDate = (dateStr) => {
+      const d = new Date(dateStr);
+      if (isNaN(d)) return dateStr;
+
+      const dd = String(d.getDate()).padStart(2, "0");
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const yy = String(d.getFullYear()).slice(-2);
+
+      return `${dd}/${mm}/${yy}`;
+    };
+
     // ✅ Fetch user
     const user = await User.findById(req.user.id);
 
@@ -19,42 +31,48 @@ export const generatePDF = async (req, res) => {
       date: { $gte: from, $lte: to },
     }).sort({ date: 1 });
 
-    // ✅ Set headers
+    // ✅ Unique file name (prevents browser cache issue)
+    const fileName = `WorkReport_${Date.now()}.pdf`;
+
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=report_${from}_to_${to}.pdf`
-    );
+    res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
 
     // ✅ Create PDF
-    const doc = new PDFDocument({ size: "A4", margin: 40 });
+    const doc = new PDFDocument({ size: "A4", margin: 50 });
     doc.pipe(res);
 
     // -------------------------
     // TITLE
     // -------------------------
-    doc.fontSize(20).text("Work Report", { align: "center" });
+    doc.fontSize(18).fillColor("black").text("Work Report", {
+      align: "center",
+    });
+
+    doc.moveDown(0.3);
+
+
     doc.moveDown(1);
 
     // -------------------------
     // META INFO
     // -------------------------
-    doc.fontSize(12);
-    doc.text(`Employee Name: ${user?.name || "N/A"}`);
-    doc.text(`Employee ID: ${user?.empid || "N/A"}`);
-    doc.text(`Team: ${user?.team || "N/A"}`);
-    doc.text(`From: ${from}    To: ${to}`);
-    doc.moveDown(1);
+    doc.fillColor("black").fontSize(12);
 
-    doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke();
-    doc.moveDown(1);
+    doc.text(`Employee Name : ${user?.name || "N/A"}`);
+    doc.text(`Employee ID   : ${user?.empid || "N/A"}`);
+    doc.text(`Team          : ${user?.team || "N/A"}`);
+    doc.text(`Report Period : ${formatDate(from)}  to  ${formatDate(to)}`);
+
+    doc.moveDown(1); // ✅ spacing only (no line)
 
     // -------------------------
-    // RECORDS
+    // NO RECORDS
     // -------------------------
+doc.text("", { underline: true });
+
     if (!records || records.length === 0) {
       doc
-        .fontSize(13)
+        .fontSize(12)
         .fillColor("gray")
         .text("No tasks found in this date range.", { align: "center" });
 
@@ -62,20 +80,29 @@ export const generatePDF = async (req, res) => {
       return;
     }
 
+    // -------------------------
+    // TASKS DAY WISE
+    // -------------------------
     records.forEach((r) => {
-      doc.fillColor("black").fontSize(14).text(`📅 Date: ${r.date}`, {
+      // Page break
+      if (doc.y > 740) doc.addPage();
+
+      // Date heading
+      doc.fillColor("black").fontSize(13).text(`Date: ${formatDate(r.date)}`, {
         underline: true,
       });
 
       doc.moveDown(0.5);
 
       if (!r.tasks || r.tasks.length === 0) {
-        doc.fontSize(12).fillColor("gray").text("No tasks for this day.");
+        doc.fontSize(11).fillColor("gray").text("No tasks for this day.");
         doc.moveDown(1);
         return;
       }
 
       r.tasks.forEach((t, index) => {
+        if (doc.y > 760) doc.addPage();
+
         doc.fillColor("black").fontSize(12).text(`${index + 1}. ${t.title}`);
 
         if (t.description) {
@@ -88,20 +115,13 @@ export const generatePDF = async (req, res) => {
         doc.moveDown(0.3);
       });
 
-      doc.moveDown(1);
-      doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke();
-      doc.moveDown(1);
+      doc.moveDown(0.8);
     });
 
     // -------------------------
-    // FOOTER
+    // FOOTER (Removed line)
     // -------------------------
-    doc
-      .fontSize(10)
-      .fillColor("gray")
-      .text("Generated Automatically by Employee Task Manager", {
-        align: "center",
-      });
+    doc.moveDown(1);
 
     doc.end();
   } catch (error) {

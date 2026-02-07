@@ -1,109 +1,212 @@
 export const generateHTML = (userName, empid, team, from, to, records) => {
+  // ✅ Format Date: DD/MM/YY
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yy = String(d.getFullYear()).slice(-2);
+
+    return `${dd}/${mm}/${yy}`;
+  };
+
+  // ✅ Task Table Day wise
   const rows = records
     .map((r) => {
-      const list = r.tasks
-        .map(
-          (t, i) =>
-            `<li><b>${i + 1}.</b> ${t.title}${
-              t.description ? ` - ${t.description}` : ""
-            }</li>`
-        )
+      const tasksHTML = r.tasks
+        .map((t, i) => {
+          return `
+            <tr>
+              <td class="col-sl">${i + 1}</td>
+              <td class="col-title">${t.title || ""}</td>
+              <td class="col-desc">${t.description || "-"}</td>
+            </tr>
+          `;
+        })
         .join("");
 
       return `
-        <div class="day">
-          <h3>📅 Date: ${r.date}</h3>
-          <ul>${list}</ul>
+        <div class="day-block">
+          <div class="day-title">
+            Work Date: <span>${formatDate(r.date)}</span>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th class="col-sl">Sl</th>
+                <th class="col-title">Task Title</th>
+                <th class="col-desc">Description</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${tasksHTML}
+            </tbody>
+          </table>
         </div>
       `;
     })
     .join("");
 
   return `
+  <!DOCTYPE html>
   <html>
     <head>
       <meta charset="UTF-8" />
       <style>
+        * {
+          box-sizing: border-box;
+        }
+
         body {
-          font-family: Arial, sans-serif;
-          padding: 30px;
+          font-family: Arial, Helvetica, sans-serif;
+          margin: 0;
+          padding: 35px;
           color: #111;
-        }
-
-        h1 {
-          text-align: center;
-          margin-bottom: 10px;
-        }
-
-        .meta {
-          margin-bottom: 20px;
-          padding: 15px;
-          border: 1px solid #ddd;
-          border-radius: 10px;
-          background: #f9f9f9;
-        }
-
-        .meta p {
-          margin: 6px 0;
-          font-size: 14px;
-        }
-
-        .day {
-          margin-bottom: 15px;
-          padding: 15px;
-          border: 1px solid #ddd;
-          border-radius: 10px;
+          font-size: 13px;
           background: #fff;
         }
 
-        .day h3 {
-          margin: 0 0 10px;
-          font-size: 16px;
-        }
-
-        ul {
-          padding-left: 20px;
-          margin: 0;
-        }
-
-        li {
-          margin-bottom: 6px;
-          font-size: 14px;
-        }
-
-        hr {
-          margin-top: 30px;
-          border: none;
-          border-top: 1px solid #ddd;
-        }
-
-        .footer {
+        /* ✅ Header */
+        .header {
           text-align: center;
-          font-size: 12px;
-          color: #666;
-          margin-top: 10px;
+          padding-bottom: 12px;
+          border-bottom: 2px solid #000;
+          margin-bottom: 20px;
         }
+
+        .header h1 {
+          margin: 0;
+          font-size: 22px;
+          letter-spacing: 0.5px;
+        }
+
+        .header p {
+          margin: 6px 0 0;
+          font-size: 12px;
+          color: #444;
+        }
+
+        /* ✅ Meta Info Box */
+        .meta {
+          width: 100%;
+          border: 1px solid #000;
+          padding: 14px;
+          margin-bottom: 22px;
+        }
+
+        .meta-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px 30px;
+        }
+
+        .meta-item {
+          font-size: 13px;
+          line-height: 1.4;
+        }
+
+        .meta-item b {
+          display: inline-block;
+          min-width: 120px;
+        }
+
+        /* ✅ Day Block */
+        .day-block {
+          margin-bottom: 20px;
+          page-break-inside: avoid;
+        }
+
+        .day-title {
+          font-size: 14px;
+          font-weight: bold;
+          padding: 8px 10px;
+          border: 1px solid #000;
+          background: #f2f2f2;
+          margin-bottom: 0;
+        }
+
+        .day-title span {
+          font-weight: normal;
+        }
+
+        /* ✅ Table */
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          border: 1px solid #000;
+          border-top: none;
+        }
+
+        th, td {
+          border: 1px solid #000;
+          padding: 8px 10px;
+          vertical-align: top;
+        }
+
+        thead th {
+          background: #000;
+          color: #fff;
+          font-size: 13px;
+          text-align: left;
+        }
+
+        .col-sl {
+          width: 50px;
+          text-align: center;
+          font-weight: bold;
+        }
+
+        .col-title {
+          width: 35%;
+          font-weight: bold;
+        }
+
+        .col-desc {
+          width: auto;
+        }
+
+        /* ✅ Footer */
+        .footer {
+          margin-top: 25px;
+          padding-top: 10px;
+          border-top: 1px solid #000;
+          text-align: center;
+          font-size: 11px;
+          color: #444;
+        }
+
       </style>
     </head>
 
     <body>
-      <h1>Work Report</h1>
+      <div class="header">
+        <h1>WORK REPORT</h1>
+        <p>Employee Task Workflow Report</p>
+      </div>
 
       <div class="meta">
-        <p><b>Employee Name:</b> ${userName}</p>
-        <p><b>Employee ID:</b> ${empid}</p>
-        <p><b>Team:</b> ${team}</p>
-        <p><b>From:</b> ${from} &nbsp;&nbsp; <b>To:</b> ${to}</p>
+        <div class="meta-grid">
+          <div class="meta-item"><b>Employee Name:</b> ${userName}</div>
+          <div class="meta-item"><b>Employee ID:</b> ${empid}</div>
+          <div class="meta-item"><b>Team:</b> ${team}</div>
+          <div class="meta-item"><b>Report Period:</b> ${formatDate(from)} to ${formatDate(to)}</div>
+        </div>
       </div>
 
       ${
         rows
           ? rows
-          : `<p style="text-align:center; color:#777;">No tasks found in this date range.</p>`
+          : `<p style="text-align:center; font-size:14px; color:#444;">No tasks found in this date range.</p>`
       }
 
-      <hr />
-      <p class="footer">Generated Automatically by Employee Task Manager</p>
+      <div class="footer">
+        Generated by anup
+      </div>
     </body>
   </html>
   `;
